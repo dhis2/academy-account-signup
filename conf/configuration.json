@@ -1,8 +1,29 @@
 {
-  "dhis": {
-	"server": "http://localhost/dhis", 
-    "username": "admin",
-    "password": "district"
-  }, 
-  "userConfig": {}
+  "inviteConfig": {
+    "customisation": {
+      "code": "customisation",
+      "server": {
+        "url": "https://play.dhis2.org/demo",
+        "user": "admin",
+        "password": "district"
+      },
+      "roles": [{"id": "XS0dNzuZmfH"}],
+      "groups": [{"id": "ZoHNWQajIoe"}],
+      "orgunitParent": ["ImspTQPwCqd"]
+    },
+    "use": {
+      "server": {
+        "url": "https://play.dhis2.org/demo",
+        "user": "admin",
+        "password": "district"
+      },
+      "roles": [{"id": "XS0dNzuZmfH"}],
+      "groups": [{"id": "ZoHNWQajIoe"}],
+      "orgunits": [
+        {
+          "id": "ImspTQPwCqd"
+        }
+      ]
+    }
+  }
 }

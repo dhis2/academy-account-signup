@@ -12,11 +12,11 @@
 
 	var debug = false;
 
-	function post(url, payload) {
+	function post(url, payload, serverInfo) {
 
 		var deferred = Q.defer();
 
-		url = conf.dhis.server + url;
+		url = serverInfo.url + url;
 		if (debug) console.log("POST request: " + url);
 
 		request.post({
@@ -24,10 +24,11 @@
 			json: true,
 			body: payload,
 			auth: {
-				'user': conf.dhis.username,
-				'pass': conf.dhis.password
+				'user': serverInfo.user,
+				'pass': serverInfo.password
 			}
 		}, function (error, response, data) {
+			console.log(data);
 			if (!error && response.statusCode === 200) {
 				deferred.resolve(data);
 			}
@@ -42,7 +43,7 @@
 	}
 
 
-	function put(url, payload) {
+	function put(url, payload, serverInfo) {
 
 		var deferred = Q.defer();
 
@@ -73,7 +74,7 @@
 
 	var getQ;
 	var getCurrent = null;
-	function get(url) {
+	function get(url, serverInfo) {
 		var deferred = Q.defer();
 
 		if (!getQ) getQ = [];
