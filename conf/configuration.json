@@ -1,0 +1,8 @@
+{
+  "dhis": {
+	"server": "http://localhost/dhis", 
+    "username": "admin",
+    "password": "district"
+  }, 
+  "userConfig": {}
+}
