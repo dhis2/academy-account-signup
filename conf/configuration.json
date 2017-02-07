@@ -1,15 +1,14 @@
 {
   "inviteConfig": {
     "customisation": {
-      "code": "customisation",
       "server": {
         "url": "https://play.dhis2.org/demo",
         "user": "admin",
         "password": "district"
       },
       "roles": [{"id": "XS0dNzuZmfH"}],
-      "groups": [{"id": "ZoHNWQajIoe"}],
-      "orgunitParent": ["ImspTQPwCqd"]
+      "groups": [],
+      "orgunitParent": "qtr8GGlm4gg"
     },
     "use": {
       "server": {
@@ -19,11 +18,7 @@
       },
       "roles": [{"id": "XS0dNzuZmfH"}],
       "groups": [{"id": "ZoHNWQajIoe"}],
-      "orgunits": [
-        {
-          "id": "ImspTQPwCqd"
-        }
-      ]
+      "orgunits": [{"id": "ImspTQPwCqd"}]
     }
   }
 }

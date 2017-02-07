@@ -15,6 +15,7 @@
 	function post(url, payload, serverInfo) {
 
 		var deferred = Q.defer();
+		var debug = false;
 
 		url = serverInfo.url + url;
 		if (debug) console.log("POST request: " + url);
@@ -28,8 +29,8 @@
 				'pass': serverInfo.password
 			}
 		}, function (error, response, data) {
-			console.log(data);
-			if (!error && response.statusCode === 200) {
+			if (debug) console.log(data);
+			if (!error && (response.statusCode >= 200 && response.statusCode < 300)) {
 				deferred.resolve(data);
 			}
 			else {
