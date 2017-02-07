@@ -4,6 +4,9 @@
   "private": true,
   "dependencies": {
     "q": "^1.4.1",
-    "request": "^2.79.0"
+    "request": "^2.79.0",
+    "body-parser": "~1.15.2",
+    "express": "~4.13.4",
+    "moment": "^2.14.1"
   }
 }
