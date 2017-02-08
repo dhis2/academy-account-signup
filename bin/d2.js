@@ -7,6 +7,7 @@
 	var request = require('request');
 
 	module.exports.put = put;
+	module.exports.patch = patch;
 	module.exports.get = get;
 	module.exports.post = post;
 
@@ -49,7 +50,7 @@
 
 		var deferred = Q.defer();
 
-		url = conf.dhis.server + url;
+		url = serverInfo.url + url;
 		if (debug) console.log("Put request: " + url);
 
 		request.put({
@@ -57,8 +58,8 @@
 			json: true,
 			body: payload,
 			auth: {
-				'user': conf.dhis.username,
-				'pass': conf.dhis.password
+				'user': serverInfo.user,
+				'pass': serverInfo.password
 			}
 		}, function (error, response, data) {
 			if (!error && (response.statusCode >= 200 && response.statusCode < 300)) {
@@ -74,6 +75,35 @@
 	}
 
 
+	function patch(url, payload, serverInfo) {
+
+		var deferred = Q.defer();
+
+		url = serverInfo.url + url;
+		if (debug) console.log("Patch request: " + url);
+
+		request.patch({
+			uri: url,
+			json: true,
+			body: payload,
+			auth: {
+				'user': serverInfo.user,
+				'pass': serverInfo.password
+			}
+		}, function (error, response, data) {
+			if (!error && (response.statusCode >= 200 && response.statusCode < 300)) {
+				deferred.resolve(true);
+			}
+			else {
+				console.log("Error in PATCH");
+				deferred.reject({'data': data, 'error': error, 'status': response.statusCode});
+			}
+		});
+
+		return deferred.promise;
+	}
+
+
 	var getQ;
 	var getCurrent = null;
 	function get(url, serverInfo) {
@@ -81,7 +111,7 @@
 
 		if (!getQ) getQ = [];
 
-		getQ.push({ 'url': url, 'deferred': deferred});
+		getQ.push({ 'url': url, 'deferred': deferred, 'serverInfo': serverInfo});
 
 		getNow();
 
@@ -98,15 +128,15 @@
 			getCurrent = getQ.pop();
 		}
 
-		var url = conf.dhis.server + getCurrent.url;
+		var url = getCurrent.serverInfo.url + getCurrent.url;
 		if (debug) console.log("GET request: " + url);
 
 		request.get({
 			uri: url,
 			json: true,
 			auth: {
-				'user': conf.dhis.username,
-				'pass': conf.dhis.password
+				'user': getCurrent.serverInfo.user,
+				'pass': getCurrent.serverInfo.password
 			},
 			forever: true
 		}, function (error, response, data) {
