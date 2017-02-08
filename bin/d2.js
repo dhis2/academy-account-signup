@@ -12,6 +12,7 @@
 
 	var debug = false;
 
+
 	function post(url, payload, serverInfo) {
 
 		var deferred = Q.defer();
@@ -60,7 +61,7 @@
 				'pass': conf.dhis.password
 			}
 		}, function (error, response, data) {
-			if (!error && response.statusCode === 200) {
+			if (!error && (response.statusCode >= 200 && response.statusCode < 300)) {
 				deferred.resolve(data);
 			}
 			else {
@@ -109,8 +110,7 @@
 			},
 			forever: true
 		}, function (error, response, data) {
-			if (!error && response.statusCode === 200) {
-				//Save optionset
+			if (!error && (response.statusCode >= 200 && response.statusCode < 300)) {
 				getCurrent.deferred.resolve(data)
 				getCurrent = null;
 				getNow();

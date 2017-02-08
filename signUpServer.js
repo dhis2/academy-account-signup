@@ -11,7 +11,7 @@
 
 	//Log all requests
 	var logger = function(req, res, next) {
-		console.log(req.method + " " + req.originalUrl);
+		console.log("\n" + new Date() + '\n' + req.method + " " + req.originalUrl);
 		next();
 	}
 	app.use(logger);
@@ -30,7 +30,7 @@
 		var valid = req.body.hasOwnProperty('email');
 		if (!req.body.hasOwnProperty('email')) {
 			res.statusCode = 400;
-			return res.send('Invalid syntax');
+			return res.send('Bad request ("email" property required)');
 		}
 
 		console.log(req.body.email);
@@ -43,16 +43,22 @@
 
 
 	//Make accounts (invites)
+	//Call functions depending on type(s) of accounts to be created
 	function makeAccounts(userInfo) {
+		//Default - user invite with roles and groups
+		if (conf.inviteConfig.hasOwnProperty('default')) makeDefaultAccount(userInfo, conf.inviteConfig['default']);
 
-		//Call functions depending on type(s) of accounts to be created
+		//Customisation - user invite with new dataset, user role and orgunit branch
 		if (conf.inviteConfig.hasOwnProperty('customisation')) makeCustomsationAccount(userInfo, conf.inviteConfig['customisation']);
-		//if (conf.inviteConfig.hasOwnProperty('use')) makeUseAccount(userInfo, conf.inviteConfig['use']);
+
+		//More as needed...
+
+
 	}
 
 
 	//Make account (invite) for data use, i.e. just an account with role and groups
-	function makeUseAccount(userInfo, definition) {
+	function makeDefaultAccount(userInfo, definition) {
 		var invite = {};
 
 		//Email
@@ -134,9 +140,9 @@
 	}
 	
 
-	//Start server on port 8089
-	app.listen(8089, function () {
-		console.log('Listening on port 8089!');
+	//Start server on port 8099
+	app.listen(8099, function () {
+		console.log('Listening on port 8099!');
 	});
 
 

@@ -10,7 +10,7 @@
       "groups": [],
       "orgunitParent": "qtr8GGlm4gg"
     },
-    "use": {
+    "default": {
       "server": {
         "url": "https://play.dhis2.org/demo",
         "user": "admin",
