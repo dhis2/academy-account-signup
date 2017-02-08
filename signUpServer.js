@@ -17,7 +17,7 @@
 	app.use(logger);
 
 
-	//Use express for static files, i.e. the frontend registration form
+	//Use express to serve static files, i.e. the frontend registration form
 	app.use(express.static('public'))
 
 
@@ -104,6 +104,7 @@
 				"periodType": "Monthly",
 				"categoryCombo": null,
 				"mobile": true,
+				"publicAccess": "--------"
 			};
 			d2.post('/api/dataSets', newDataSet, definition.server).then(function(data) {
 				console.log("Dataset:" + data.response.uid);
@@ -112,7 +113,8 @@
 				//Make user role
 				var newUserRole = {
 					"name": "User role - " + userInfo.email,
-					"dataSets": [{"id": dataSetId}]
+					"dataSets": [{"id": dataSetId}],
+					"publicAccess": "--------"
 				}
 				d2.post('/api/userRoles', newUserRole, definition.server).then(function(data) {
 					console.log("Userrole:" + data.response.uid);
@@ -131,6 +133,19 @@
 					invite.userCredentials.userRoles.push({"id": userRoleId});
 					d2.post('/api/users/invite', invite, definition.server).then(function(data) {
 						console.log("User:" + data.uid);
+						var owner = {"user": {"id": data.uid}};
+
+						//Now we must set owner of userRole to the new user
+						d2.patch('/api/userRoles/' + userRoleId + '/user', owner, definition.server).then(function(data) {
+							console.log("UserRole owner: " + data);
+
+							//And the owner for the dataset
+							d2.patch('/api/dataSets/' + dataSetId + '/user', owner, definition.server).then(function(data) {
+								console.log("DataSet owner: " + data);
+							});
+						});
+
+
 					});
 				});
 			});
