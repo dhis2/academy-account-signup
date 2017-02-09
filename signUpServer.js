@@ -1,6 +1,7 @@
 (function(){
 	var express = require('express');
 	var bodyParser = require('body-parser');
+	var Q = require('q');
 	var conf = require('./conf/configuration.json');
 	var d2 = require('./bin/d2.js');
 
@@ -35,30 +36,59 @@
 
 		console.log(req.body.email);
 
-		//TODO: use Q, return result
-		makeAccounts(req.body);
-
-		res.json(true);
+		makeAccounts(req.body).then(function(success) {
+			if (success) {
+				res.statusCode = 201;
+				return res.send('Created');
+			}
+			else {
+				res.statusCode = 400;
+				return res.send('Error creating account(s)');
+			}
+		});
 	});
 
 
 	//Make accounts (invites)
 	//Call functions depending on type(s) of accounts to be created
 	function makeAccounts(userInfo) {
+
+		//Makes promises for account creation
+		var deferred = Q.defer();
+		var promises = [];
+
 		//Default - user invite with roles and groups
-		if (conf.inviteConfig.hasOwnProperty('default')) makeDefaultAccount(userInfo, conf.inviteConfig['default']);
+		if (conf.inviteConfig.hasOwnProperty('default')) {
+			promises.push(makeDefaultAccount(userInfo, conf.inviteConfig['default']));
+		}
 
 		//Customisation - user invite with new dataset, user role and orgunit branch
-		if (conf.inviteConfig.hasOwnProperty('customisation')) makeCustomsationAccount(userInfo, conf.inviteConfig['customisation']);
+		if (conf.inviteConfig.hasOwnProperty('customisation')) {
+			promises.push(makeCustomsationAccount(userInfo, conf.inviteConfig['customisation']));
+		}
 
 		//More as needed...
 
+
+		//Check result of account creation, return true if all were successful
+		var result = true;
+		Q.all(promises).then(function(results) {
+			for (var i = 0; i < results.length; i++) {
+				result = result && results[i];
+			}
+
+			deferred.resolve(result);
+		})
+
+
+		return deferred.promise;
 
 	}
 
 
 	//Make account (invite) for data use, i.e. just an account with role and groups
 	function makeDefaultAccount(userInfo, definition) {
+		var deferred = Q.defer();
 		var invite = {};
 
 		//Email
@@ -76,13 +106,18 @@
 		//Orgunits
 		invite.organisationUnits = definition.orgunits;
 
-		d2.post('/api/users/invite', invite, definition.server);
+		d2.post('/api/users/invite', invite, definition.server).then(function(data) {
+			deferred.resolve(true);
+		});
+		return deferred.promise;
 
 	}
 
 
 	//Make account (invite) for data use, i.e. account with a private "subtree" in the hierarchy, an empty data set and a user role
 	function makeCustomsationAccount(userInfo, definition) {
+		var deferred = Q.defer();
+
 
 		//Make orgunit
 		var today = new Date();
@@ -116,7 +151,7 @@
 					"dataSets": [{"id": dataSetId}],
 					"publicAccess": "--------"
 				}
-				d2.post('/api/userRoles', newUserRole, definition.server).then(function(data) {
+				d2.post('/api/userRoles', newUserRole, definition.server).then(function (data) {
 					console.log("Userrole:" + data.response.uid);
 					var userRoleId = data.response.uid;
 
@@ -131,27 +166,49 @@
 						"organisationUnits": [{"id": orgunitId}]
 					};
 					invite.userCredentials.userRoles.push({"id": userRoleId});
-					d2.post('/api/users/invite', invite, definition.server).then(function(data) {
+					d2.post('/api/users/invite', invite, definition.server).then(function (data) {
 						console.log("User:" + data.uid);
-						var owner = {"user": {"id": data.uid}};
+						var owner = {"id": data.uid};
 
 						//Now we must set owner of userRole to the new user
-						d2.patch('/api/userRoles/' + userRoleId + '/user', owner, definition.server).then(function(data) {
-							console.log("UserRole owner: " + data);
+						d2.get('/api/userRoles/' + userRoleId + '.json?fields=:owner', definition.server).then(function (data) {
 
-							//And the owner for the dataset
-							d2.patch('/api/dataSets/' + dataSetId + '/user', owner, definition.server).then(function(data) {
-								console.log("DataSet owner: " + data);
+							data.user = owner;
+							d2.put('/api/userRoles/' + userRoleId, data, definition.server).then(function (data) {
+
+								//Now we must set owner of userRole to the new user
+								d2.get('/api/dataSets/' + dataSetId + '.json?fields=:owner', definition.server).then(function (data) {
+
+									data.user = owner;
+									d2.put('/api/dataSets/' + dataSetId, data, definition.server).then(function (data) {
+										console.log("DONE");
+										deferred.resolve(true);
+									}, function(error) {
+										deferred.resolve(false);
+								}, function(error) {
+									deferred.resolve(false);
+									});
+							}, function(error) {
+								deferred.resolve(false);
+								});
+						}, function(error) {
+							deferred.resolve(false);
 							});
+					}, function(error) {
+						deferred.resolve(false);
 						});
-
-
+				}, function(error) {
+					deferred.resolve(false);
 					});
+			}, function(error) {
+				deferred.resolve(false);
 				});
+		}, function(error) {
+			deferred.resolve(false);
 			});
-
-
 		});
+
+		return deferred.promise;
 	}
 	
 
