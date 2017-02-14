@@ -1,6 +1,6 @@
 {
   "inviteConfig": {
-    "customisation": {
+    "default": {
       "server": {
         "url": "https://play.dhis2.org/demo",
         "user": "admin",
@@ -10,7 +10,7 @@
       "groups": [],
       "orgunitParent": "qtr8GGlm4gg"
     },
-    "default": {
+    "customisation": {
       "server": {
         "url": "https://play.dhis2.org/demo",
         "user": "admin",

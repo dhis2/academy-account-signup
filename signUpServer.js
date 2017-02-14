@@ -19,7 +19,7 @@
 
 
 	//Use express to serve static files, i.e. the frontend registration form
-	app.use(express.static('public'))
+	app.use(express.static('public'));
 
 
 	//Use body-parser for parsing json
@@ -27,7 +27,7 @@
 
 
 	//"API" for signing up
-	app.post('/signup', function(req, res) {
+	app.post('/signup/api', function(req, res) {
 		var valid = req.body.hasOwnProperty('email');
 		if (!req.body.hasOwnProperty('email')) {
 			res.statusCode = 400;
@@ -39,11 +39,11 @@
 		makeAccounts(req.body).then(function(success) {
 			if (success) {
 				res.statusCode = 201;
-				return res.send('Created');
+				return res.send({"result": "Created"});
 			}
 			else {
 				res.statusCode = 400;
-				return res.send('Error creating account(s)');
+				return res.send({"result": "Error creating account(s)"});
 			}
 		});
 	});
@@ -133,11 +133,11 @@
 			console.log("Orgunit:" + data.response.uid);
 			var orgunitId = data.response.uid;
 
-			//Make data set
+			//Make data set - categoryCombo required only for 2.25, hardcoded here
 			var newDataSet = {
 				"name": "Data set - " + userInfo.email,
 				"periodType": "Monthly",
-				"categoryCombo": null,
+				"categoryCombo": {"id": "bjDvmb4bfuf"},
 				"mobile": true,
 				"publicAccess": "--------"
 			};

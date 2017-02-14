@@ -1,0 +1,43 @@
+<script
+		src="https://code.jquery.com/jquery-2.2.4.min.js"
+		crossorigin="anonymous">
+</script>
+<script>
+
+	function submitForm() {
+
+		var formData = {};
+		$.each($('form').serializeArray(), function() {
+			formData[this.name] = this.value;
+		});
+
+		$.ajax({
+			url         : 'https://academy-dev.dhis2.org/signup/api',
+			type        : 'POST',
+			data		: JSON.stringify(formData),
+			contentType	: "application/json; charset=utf-8",
+			dataType	: "json",
+			success: function (result, status, xhr) {
+				alert("Account invitation sent");
+			},
+			error: function (xhr,status,error) {
+				alert("A problem occured when creating the account - contact the training organisers");
+			}
+		});
+	}
+
+</script>
+
+<html>
+<h1>Sign up for online academy DHIS 2 access here...</h1>
+<form onsubmit="submitForm(); return false;">
+	<label for="email">Email:</label>
+	<input type="email" id="email" name="email" placeholder="Enter your email address" />
+	<input type="button" onClick="submitForm();" value="Request account" />
+</form>
+<p>After requesting an account you will receive invitation by email to register in two different databases: </p>
+<ul>
+	<li>Trainingland - for information use and tracker exercises</li>
+	<li>Customisationland - for database design exercises</li>
+</ul>
+</html>
