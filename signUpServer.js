@@ -26,6 +26,30 @@
 	app.use( bodyParser.json());
 
 
+	//Allow cross-domain from *.dhis2academy.org //http://stackoverflow.com/questions/11001817/allow-cors-rest-request-to-a-express-node-js-application-on-heroku
+	var allowCrossDomain = function(req, res, next) {
+
+		var origin = req.get('origin');
+		if (origin.indexOf('.dhis2academy.org') > 0) {
+			res.header('Access-Control-Allow-Origin', origin);
+		}
+		else {
+			res.header('Access-Control-Allow-Origin', 'dhis2.org');
+		}
+		res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+		res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
+
+		// intercept OPTIONS method
+		if ('OPTIONS' == req.method) {
+			res.sendStatus(200);
+		}
+		else {
+			next();
+		}
+	};
+	app.use(allowCrossDomain);
+
+
 	//"API" for signing up
 	app.post('/signup/api', function(req, res) {
 		var valid = req.body.hasOwnProperty('email');
