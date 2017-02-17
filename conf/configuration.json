@@ -7,8 +7,8 @@
         "password": "district"
       },
       "roles": [{"id": "XS0dNzuZmfH"}],
-      "groups": [],
-      "orgunitParent": "qtr8GGlm4gg"
+      "groups": [{"id": "ZoHNWQajIoe"}],
+      "orgunits": [{"id": "ImspTQPwCqd"}]
     },
     "customisation": {
       "server": {
@@ -17,8 +17,8 @@
         "password": "district"
       },
       "roles": [{"id": "XS0dNzuZmfH"}],
-      "groups": [{"id": "ZoHNWQajIoe"}],
-      "orgunits": [{"id": "ImspTQPwCqd"}]
+      "groups": [],
+      "orgunitParent": "qtr8GGlm4gg"
     }
   }
 }
