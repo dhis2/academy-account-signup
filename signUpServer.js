@@ -82,12 +82,12 @@
 		var promises = [];
 
 		//Default - user invite with roles and groups
-		if (conf.inviteConfig.hasOwnProperty('default')) {
+		if (conf.inviteConfig.hasOwnProperty('default') && userInfo.type && unserInfo.type === 'default') {
 			promises.push(makeDefaultAccount(userInfo, conf.inviteConfig['default']));
 		}
 
 		//Customisation - user invite with new dataset, user role and orgunit branch
-		if (conf.inviteConfig.hasOwnProperty('customisation')) {
+		if (conf.inviteConfig.hasOwnProperty('customisation') && userInfo.type && unserInfo.type === 'customisation') {
 			promises.push(makeCustomsationAccount(userInfo, conf.inviteConfig['customisation']));
 		}
 
