@@ -18,10 +18,10 @@
 			contentType	: "application/json; charset=utf-8",
 			dataType	: "json",
 			success: function (result, status, xhr) {
-				alert("Account invitation sent");
+				alert(xhr.responseText);
 			},
 			error: function (xhr,status,error) {
-				alert("A problem occured when creating the account - contact the training organisers");
+				alert(xhr.responseText);
 			}
 		});
 	}

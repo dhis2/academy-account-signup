@@ -71,11 +71,11 @@
 		makeAccounts(req.body).then(function(success) {
 			if (success.success) {
 				res.statusCode = 201;
-				return res.send({"result": success.message});
+				return res.send(success.message);
 			}
 			else {
 				res.statusCode = 400;
-				return res.send({"result": success.message});
+				return res.send(success.message);
 			}
 		});
 	});
