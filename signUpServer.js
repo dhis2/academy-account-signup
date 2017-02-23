@@ -23,14 +23,22 @@
 
 
 	//Use body-parser for parsing json
-	app.use( bodyParser.json());
+	app.use(bodyParser.json());
 
 
 	//Allow cross-domain from *.dhis2academy.org //http://stackoverflow.com/questions/11001817/allow-cors-rest-request-to-a-express-node-js-application-on-heroku
 	var allowCrossDomain = function(req, res, next) {
 
 		var origin = req.get('origin');
+		if (!origin) {
+			next();
+			return;
+		}
+
 		if (origin.indexOf('.dhis2academy.org') > 0) {
+			res.header('Access-Control-Allow-Origin', origin);
+		}
+		else if (origin.indexOf('.dhis2.org') > 0) {
 			res.header('Access-Control-Allow-Origin', origin);
 		}
 		else {
@@ -61,13 +69,13 @@
 		console.log(req.body.email);
 
 		makeAccounts(req.body).then(function(success) {
-			if (success) {
+			if (success.success) {
 				res.statusCode = 201;
-				return res.send({"result": "Created"});
+				return res.send({"result": success.message});
 			}
 			else {
 				res.statusCode = 400;
-				return res.send({"result": "Error creating account(s)"});
+				return res.send({"result": success.message});
 			}
 		});
 	});
@@ -82,12 +90,12 @@
 		var promises = [];
 
 		//Default - user invite with roles and groups
-		if (conf.inviteConfig.hasOwnProperty('default') && userInfo.type && unserInfo.type === 'default') {
+		if (conf.inviteConfig.hasOwnProperty('default') && userInfo.type && userInfo.type === 'default') {
 			promises.push(makeDefaultAccount(userInfo, conf.inviteConfig['default']));
 		}
 
 		//Customisation - user invite with new dataset, user role and orgunit branch
-		if (conf.inviteConfig.hasOwnProperty('customisation') && userInfo.type && unserInfo.type === 'customisation') {
+		if (conf.inviteConfig.hasOwnProperty('customisation') && userInfo.type && userInfo.type === 'customisation') {
 			promises.push(makeCustomsationAccount(userInfo, conf.inviteConfig['customisation']));
 		}
 
@@ -130,8 +138,17 @@
 		//Orgunits
 		invite.organisationUnits = definition.orgunits;
 
-		d2.post('/api/users/invite', invite, definition.server).then(function(data) {
-			deferred.resolve(true);
+		d2.get("/api/users.json?filter=email:eq:" + userInfo.email, definition.server).then(function(data) {
+			if (data.users.length > 0) {
+				deferred.resolve({"success": false, "message": "Account already requested. If you have not received an invitation, contact the course organiser."});
+				console.log("Duplicate");
+			}
+			else {
+				d2.post('/api/users/invite', invite, definition.server).then(function(data) {
+					deferred.resolve({"success": true, "message": "Account invitation sent to " + userInfo.email});
+				});
+			}
+
 		});
 		return deferred.promise;
 
@@ -142,95 +159,103 @@
 	function makeCustomsationAccount(userInfo, definition) {
 		var deferred = Q.defer();
 
+		//Check for duplicate
+		d2.get("/api/users.json?filter=email:eq:" + userInfo.email, definition.server).then(function(data) {
 
-		//Make orgunit
-		var today = new Date();
-		var newRoot = {
-			"name": "ROOT - " + userInfo.email,
-			"shortName": "ROOT-" + userInfo.email,
-			"openingDate": today.getFullYear() + "-" + today.getMonth() + "-" + today.getDate(),
-			"parent": {
-				"id": definition.orgunitParent
+			if (data.users.length > 0) {
+				deferred.resolve({"success": false, "message": "Account already requested. If you have not received an invitation, contact the course organiser."});
 			}
-		};
-		d2.post('/api/organisationUnits', newRoot, definition.server).then(function(data) {
-			console.log("Orgunit:" + data.response.uid);
-			var orgunitId = data.response.uid;
+			else {
+				//Make orgunit
+				var today = new Date();
+				var newRoot = {
+					"name": "ROOT - " + userInfo.email,
+					"shortName": "ROOT-" + userInfo.email,
+					"openingDate": today.getFullYear() + "-" + today.getMonth() + "-" + today.getDate(),
+					"parent": {
+						"id": definition.orgunitParent
+					}
+				};
+				d2.post('/api/organisationUnits', newRoot, definition.server).then(function(data) {
+					console.log("Orgunit:" + data.response.uid);
+					var orgunitId = data.response.uid;
 
-			//Make data set - categoryCombo required only for 2.25, hardcoded here
-			var newDataSet = {
-				"name": "Data set - " + userInfo.email,
-				"periodType": "Monthly",
-				"categoryCombo": {"id": "bjDvmb4bfuf"},
-				"mobile": true,
-				"publicAccess": "--------"
-			};
-			d2.post('/api/dataSets', newDataSet, definition.server).then(function(data) {
-				console.log("Dataset:" + data.response.uid);
-				var dataSetId = data.response.uid;
-
-				//Make user role
-				var newUserRole = {
-					"name": "User role - " + userInfo.email,
-					"dataSets": [{"id": dataSetId}],
-					"publicAccess": "--------"
-				}
-				d2.post('/api/userRoles', newUserRole, definition.server).then(function (data) {
-					console.log("Userrole:" + data.response.uid);
-					var userRoleId = data.response.uid;
-
-					//Make user
-					var invite = {
-						"email": userInfo.email,
-						"userCredentials": {
-							"username": null,
-							"userRoles": definition.roles
-						},
-						"userGroups": definition.groups,
-						"organisationUnits": [{"id": orgunitId}]
+					//Make data set - categoryCombo required only for 2.25, hardcoded here
+					var newDataSet = {
+						"name": "Data set - " + userInfo.email,
+						"periodType": "Monthly",
+						"categoryCombo": {"id": "bjDvmb4bfuf"},
+						"mobile": true,
+						"publicAccess": "--------"
 					};
-					invite.userCredentials.userRoles.push({"id": userRoleId});
-					d2.post('/api/users/invite', invite, definition.server).then(function (data) {
-						console.log("User:" + data.uid);
-						var owner = {"id": data.uid};
+					d2.post('/api/dataSets', newDataSet, definition.server).then(function(data) {
+						console.log("Dataset:" + data.response.uid);
+						var dataSetId = data.response.uid;
 
-						//Now we must set owner of userRole to the new user
-						d2.get('/api/userRoles/' + userRoleId + '.json?fields=:owner', definition.server).then(function (data) {
+						//Make user role
+						var newUserRole = {
+							"name": "User role - " + userInfo.email,
+							"dataSets": [{"id": dataSetId}],
+							"publicAccess": "--------"
+						}
+						d2.post('/api/userRoles', newUserRole, definition.server).then(function (data) {
+							console.log("Userrole:" + data.response.uid);
+							var userRoleId = data.response.uid;
 
-							data.user = owner;
-							d2.put('/api/userRoles/' + userRoleId, data, definition.server).then(function (data) {
+							//Make user
+							var invite = {
+								"email": userInfo.email,
+								"userCredentials": {
+									"username": null,
+									"userRoles": definition.roles
+								},
+								"userGroups": definition.groups,
+								"organisationUnits": [{"id": orgunitId}]
+							};
+							invite.userCredentials.userRoles.push({"id": userRoleId});
+							d2.post('/api/users/invite', invite, definition.server).then(function (data) {
+								console.log("User:" + data.uid);
+								var owner = {"id": data.uid};
 
 								//Now we must set owner of userRole to the new user
-								d2.get('/api/dataSets/' + dataSetId + '.json?fields=:owner', definition.server).then(function (data) {
+								d2.get('/api/userRoles/' + userRoleId + '.json?fields=:owner', definition.server).then(function (data) {
 
 									data.user = owner;
-									d2.put('/api/dataSets/' + dataSetId, data, definition.server).then(function (data) {
-										console.log("DONE");
-										deferred.resolve(true);
+									d2.put('/api/userRoles/' + userRoleId, data, definition.server).then(function (data) {
+
+										//Now we must set owner of userRole to the new user
+										d2.get('/api/dataSets/' + dataSetId + '.json?fields=:owner', definition.server).then(function (data) {
+
+											data.user = owner;
+											d2.put('/api/dataSets/' + dataSetId, data, definition.server).then(function (data) {
+												console.log("DONE");
+												deferred.resolve({"success": true, "message": "Account invitation sent to " + userInfo.email});
+											}, function(error) {
+												deferred.resolve({"success": false, "message": "Error configuring account. Contact course organiser."});
+										}, function(error) {
+											deferred.resolve({"success": false, "message": "Error configuring account. Contact course organiser."});
+											});
 									}, function(error) {
-										deferred.resolve(false);
+										deferred.resolve({"success": false, "message": "Error configuring account. Contact course organiser."});
+										});
 								}, function(error) {
-									deferred.resolve(false);
+									deferred.resolve({"success": false, "message": "Error configuring account. Contact course organiser."});
 									});
 							}, function(error) {
-								deferred.resolve(false);
+								deferred.resolve({"success": false, "message": "Error configuring account. Contact course organiser."});
 								});
 						}, function(error) {
-							deferred.resolve(false);
+							deferred.resolve({"success": false, "message": "Error configuring account. Contact course organiser."});
 							});
 					}, function(error) {
-						deferred.resolve(false);
+						deferred.resolve({"success": false, "message": "Error configuring account. Contact course organiser."});
 						});
 				}, function(error) {
-					deferred.resolve(false);
+					deferred.resolve({"success": false, "message": "Error configuring account. Contact course organiser."});
 					});
-			}, function(error) {
-				deferred.resolve(false);
 				});
-		}, function(error) {
-			deferred.resolve(false);
-			});
-		});
+			}
+		});  
 
 		return deferred.promise;
 	}
