@@ -45,7 +45,8 @@
 			res.header('Access-Control-Allow-Origin', 'dhis2.org');
 		}
 		res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
-		res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
+	    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With, X-CSRF-Token, X-CSRFToken');
+
 
 		// intercept OPTIONS method
 		if ('OPTIONS' == req.method) {
