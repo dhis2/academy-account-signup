@@ -82,6 +82,32 @@
 	});
 
 
+	//"API" for signing up
+	app.post('/check/api', function(req, res) {
+		var valid = req.body.hasOwnProperty('email');
+		if (!req.body.hasOwnProperty('email')) {
+			res.statusCode = 400;
+			return res.send('Bad request ("email" property required)');
+		}
+
+		console.log("Check result for " + req.body.email);
+
+		resultForUser(req.body).then(function(success) {
+			console.log(success.message);
+			if (success.success) {
+				res.statusCode = 201;
+				return res.send(success.message);
+			}
+			else {
+				res.statusCode = 400;
+				return res.send(success.message);
+			}
+		});
+	});
+
+
+
+
 	//Make accounts (invites)
 	//Call functions depending on type(s) of accounts to be created
 	function makeAccounts(userInfo) {
@@ -260,7 +286,93 @@
 
 		return deferred.promise;
 	}
-	
+
+
+	//Check results
+	function resultForUser(userInfo) {
+
+		//Makes promises for account creation
+		var deferred = Q.defer();
+		var promises = [];
+
+		var assignment = userInfo.assignment ? userInfo.assignment : false;
+		if (assignment) {
+			switch (assignment) {
+				case 1:
+					promises.push(resultCustomisation(userInfo.email));
+					//More as needed...
+			}
+		}
+
+		//Check result of account creation, return true if all were successful
+		var result = true;
+		Q.all(promises).then(function(results) {
+			for (var i = 0; i < results.length; i++) {
+				result = result && results[i];
+			}
+
+			deferred.resolve(result);
+		})
+
+
+		return deferred.promise;
+
+	}
+
+	//Check result of customisation exercise
+	function resultCustomisation(email) {
+		var deferred = Q.defer();
+
+		var definition = conf.inviteConfig['customisation'];
+
+		//Check for duplicate
+		d2.get("/api/users.json?filter=email:eq:" + email + '&fields=created,organisationUnits[level,path,children]&paging=false', definition.server).then(function(data) {
+
+			if (data.users.length === 0) {
+				deferred.resolve({"success": false, "message": "Account with email " + email + " not found."});
+				return;
+			}
+
+			//Get oldest (first created) user
+			var currentUser = data.users[0];
+			for (var i = 1; i < data.users.length; i++) {
+				if (currentUser.created > data.users[i].created) currentUser = data.users[i];
+			}
+
+			var currentOrgunit = currentUser.organisationUnits[0];
+			for (var i = 1; i < currentUser.organisationUnits.length; i++) {
+				if (currentOrgunit.level > currentUser.organisationUnits[i].level) currentOrgunit  = currentUser.organisationUnits[i];
+			}
+
+			//User have not created a new orgunit (child)
+			if (currentOrgunit.children.length === 0) {
+				deferred.resolve({"success": false, "message": "No orgunits have been created."});
+				return;
+			}
+
+			var childrenIds = [];
+			for (var i = 0; i < currentOrgunit.children.length; i++) {
+				childrenIds.push(currentOrgunit.children[i].id);
+			}
+
+			d2.get("/api/25/analytics.json?dimension=ou:" + childrenIds.join(';') + "&filter=pe:THIS_YEAR;LAST_5_YEARS&aggregationType=COUNT&skipMeta=true", definition.server).then(function(data) {
+				var found = false;
+			   	for (var i = 0; i < data.rows.length; i++) {
+					if (data.rows[i][1] > 0) found = true;
+				}
+
+				if (found) {
+					deferred.resolve({"success": true, "message": "Result OK"});
+				}
+				else {
+			    	deferred.resolve({"success": false, "message": "No data values."});
+				}
+			});
+		});
+
+		return deferred.promise;
+	}
+
 
 	//Start server on port 8099
 	app.listen(8099, function () {
