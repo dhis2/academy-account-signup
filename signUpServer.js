@@ -12,7 +12,7 @@
 
 	//Log all requests
 	var logger = function(req, res, next) {
-		console.log("\n" + new Date() + '\n' + req.method + " " + req.originalUrl);
+		//console.log("\n" + new Date() + '\n' + req.method + " " + req.originalUrl);
 		next();
 	}
 	app.use(logger);
@@ -90,10 +90,10 @@
 			return res.send('Bad request ("email" property required)');
 		}
 
-		console.log("Check result for " + req.body.email);
+		console.log(new Date() + " Checking " + req.body.email);
 
 		resultForUser(req.body).then(function(success) {
-			console.log(success.message);
+			console.log(new Date() + " Result " + req.body.email + ": " + success.message);
 			if (success.success) {
 				res.statusCode = 201;
 				return res.send(success.message);
@@ -326,12 +326,13 @@
 		var definition = conf.inviteConfig['customisation'];
 
 		//Check for duplicate
-		d2.get("/api/users.json?filter=email:eq:" + email + '&fields=created,organisationUnits[level,path,children]&paging=false', definition.server).then(function(data) {
+		d2.get("/api/users.json?filter=email:eq:" + email + '&fields=created,organisationUnits[level,children,id]&paging=false', definition.server).then(function(data) {
 
 			if (data.users.length === 0) {
 				deferred.resolve({"success": false, "message": "Account with email " + email + " not found."});
 				return;
 			}
+
 
 			//Get oldest (first created) user
 			var currentUser = data.users[0];
@@ -350,23 +351,35 @@
 				return;
 			}
 
-			var childrenIds = [];
-			for (var i = 0; i < currentOrgunit.children.length; i++) {
-				childrenIds.push(currentOrgunit.children[i].id);
-			}
+			//Get all orgunits and children below the "root" orgunit
+			d2.get("/api/organisationUnits.json?filter=path:like:" + currentOrgunit.id + "/&fields=[name,id,dataSets]&paging=false", definition.server).then(function(data) {
 
-			d2.get("/api/25/analytics.json?dimension=ou:" + childrenIds.join(';') + "&filter=pe:THIS_YEAR;LAST_5_YEARS&aggregationType=COUNT&skipMeta=true", definition.server).then(function(data) {
-				var found = false;
-			   	for (var i = 0; i < data.rows.length; i++) {
-					if (data.rows[i][1] > 0) found = true;
-				}
+				var dataSetExists = {};
 
-				if (found) {
-					deferred.resolve({"success": true, "message": "Result OK"});
+				var dataSetIds = [];
+				var orgunitIds = [];
+				for (var i = 0; i < data.organisationUnits.length; i++) {
+					var ou = data.organisationUnits[i];
+					orgunitIds.push(ou.id);
+					for (var j = 0; j < ou.dataSets.length; j++) {
+						if (!dataSetExists[ou.dataSets[j].id]) {
+							dataSetExists[ou.dataSets[j].id]
+							dataSetIds.push(ou.dataSets[j].id);
+						}
+					}
 				}
-				else {
-			    	deferred.resolve({"success": false, "message": "No data values."});
-				}
+				var url = '/api/dataValueSets.json?startDate=2000-01-01&endDate=2020-01-01';
+				url += '&dataSet=' + dataSetIds.join('&dataSet=');
+				url += '&orgUnit=' + orgunitIds.join('&orgUnit=');
+
+				d2.get(url,	definition.server).then(function(data) {
+					if (data.dataValues.length > 0) {
+						deferred.resolve({"success": true, "message": "Result OK"});
+					}
+					else {
+						deferred.resolve({"success": false, "message": "No data values."});
+					}
+				});
 			});
 		});
 
