@@ -12,7 +12,7 @@
 
 	//Log all requests
 	var logger = function(req, res, next) {
-		//console.log("\n" + new Date() + '\n' + req.method + " " + req.originalUrl);
+		console.log("\n" + new Date() + '\n' + req.method + " " + req.originalUrl);
 		next();
 	}
 	app.use(logger);
@@ -94,14 +94,8 @@
 
 		resultForUser(req.body).then(function(success) {
 			console.log(new Date() + " Result " + req.body.email + ": " + success.message);
-			if (success.success) {
-				res.statusCode = 201;
-				return res.send(success.message);
-			}
-			else {
-				res.statusCode = 400;
-				return res.send(success.message);
-			}
+			res.statusCode = 201;
+			return res.send(success.message);
 		});
 	});
 
@@ -185,6 +179,8 @@
 	//Make account (invite) for data use, i.e. account with a private "subtree" in the hierarchy, an empty data set and a user role
 	function makeCustomsationAccount(userInfo, definition) {
 		var deferred = Q.defer();
+		
+		
 
 		//Check for duplicate
 		d2.get("/api/users.json?filter=email:eq:" + userInfo.email, definition.server).then(function(data) {
@@ -198,7 +194,7 @@
 				var newRoot = {
 					"name": "ROOT - " + userInfo.email,
 					"shortName": "ROOT-" + userInfo.email,
-					"openingDate": today.getFullYear() + "-" + today.getMonth() + "-" + today.getDate(),
+					"openingDate": today.toISOString(),
 					"parent": {
 						"id": definition.orgunitParent
 					}
@@ -234,9 +230,9 @@
 								"email": userInfo.email,
 								"userCredentials": {
 									"username": null,
-									"userRoles": definition.roles
+									"userRoles": JSON.parse(JSON.stringify(definition.roles))
 								},
-								"userGroups": definition.groups,
+								"userGroups": JSON.parse(JSON.stringify(definition.groups)),
 								"organisationUnits": [{"id": orgunitId}]
 							};
 							invite.userCredentials.userRoles.push({"id": userRoleId});
@@ -250,7 +246,7 @@
 									data.user = owner;
 									d2.put('/api/userRoles/' + userRoleId, data, definition.server).then(function (data) {
 
-										//Now we must set owner of userRole to the new user
+										//Now we must set owner of dataSet to the new user
 										d2.get('/api/dataSets/' + dataSetId + '.json?fields=:owner', definition.server).then(function (data) {
 
 											data.user = owner;
@@ -368,12 +364,18 @@
 						}
 					}
 				}
+
+				if (dataSetIds.length < 1) {
+					deferred.resolve({"success": false, "message": "No data set assigned to orgunit children."});
+					return;
+				}
+
 				var url = '/api/dataValueSets.json?startDate=2000-01-01&endDate=2020-01-01';
 				url += '&dataSet=' + dataSetIds.join('&dataSet=');
 				url += '&orgUnit=' + orgunitIds.join('&orgUnit=');
 
 				d2.get(url,	definition.server).then(function(data) {
-					if (data.dataValues.length > 0) {
+					if (data && data.dataValues && data.dataValues.length > 0) {
 						deferred.resolve({"success": true, "message": "Result OK"});
 					}
 					else {
