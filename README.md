@@ -1,7 +1,4 @@
 # Academy account signup
-
-[![Greenkeeper badge](https://badges.greenkeeper.io/dhis2/academy-account-signup.svg)](https://greenkeeper.io/)
-
 Node.js backend to handle registration of users with data received from a basic webform.
 
 ## Setup
