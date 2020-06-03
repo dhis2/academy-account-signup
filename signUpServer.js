@@ -1,4 +1,4 @@
-(function(){
+(function () {
 	var express = require('express');
 	var bodyParser = require('body-parser');
 	var Q = require('q');
@@ -11,7 +11,7 @@
 
 
 	//Log all requests
-	var logger = function(req, res, next) {
+	var logger = function (req, res, next) {
 		console.log("\n" + new Date() + '\n' + req.method + " " + req.originalUrl);
 		next();
 	}
@@ -27,7 +27,7 @@
 
 
 	//Allow cross-domain from *.dhis2academy.org //http://stackoverflow.com/questions/11001817/allow-cors-rest-request-to-a-express-node-js-application-on-heroku
-	var allowCrossDomain = function(req, res, next) {
+	var allowCrossDomain = function (req, res, next) {
 
 		var origin = req.get('origin');
 		if (!origin) {
@@ -45,7 +45,7 @@
 			res.header('Access-Control-Allow-Origin', 'dhis2.org');
 		}
 		res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
-	    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With, X-CSRF-Token, X-CSRFToken');
+		res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With, X-CSRF-Token, X-CSRFToken');
 
 
 		// intercept OPTIONS method
@@ -60,7 +60,7 @@
 
 
 	//"API" for signing up
-	app.post('/signup/api', function(req, res) {
+	app.post('/signup/api', function (req, res) {
 		var valid = req.body.hasOwnProperty('email') && req.body.hasOwnProperty('url');
 		if (!req.body.hasOwnProperty('email')) {
 			res.statusCode = 400;
@@ -73,7 +73,7 @@
 
 		console.log(req.body.email);
 
-		makeAccounts(req.body).then(function(success) {
+		makeAccounts(req.body).then(function (success) {
 			if (success.success) {
 				res.statusCode = 201;
 				return res.send(success.message);
@@ -87,7 +87,7 @@
 
 
 	//"API" for checking results
-	app.post('/check/api', function(req, res) {
+	app.post('/check/api', function (req, res) {
 		var valid = req.body.hasOwnProperty('email');
 		if (!req.body.hasOwnProperty('email')) {
 			res.statusCode = 400;
@@ -96,7 +96,7 @@
 
 		console.log(new Date() + " Checking " + req.body.email);
 
-		resultForUser(req.body).then(function(success) {
+		resultForUser(req.body).then(function (success) {
 			console.log(new Date() + " Result " + req.body.email + ": " + success.message);
 			res.statusCode = 201;
 			return res.send(success.message);
@@ -125,16 +125,19 @@
 			if (c.type == "default") {
 				promises.push(makeDefaultAccount(userInfo, c));
 			}
-			else if (c.type == "customisation") {
-				promises.push(makeCustomsationAccount(userInfo, c));
+			else if (c.type == "customisationAggregate") {
+				promises.push(makeAggregateFundamentalsAccount(userInfo, c));
 			}
-			
+			else if (c.type == "customisationEvent") {
+				promises.push(makeEventFundamentalsAccount(userInfo, c));
+			}
+
 		}
 
 
 		//Check result of account creation, return true if all were successful
 		var result = true;
-		Q.all(promises).then(function(results) {
+		Q.all(promises).then(function (results) {
 			for (var i = 0; i < results.length; i++) {
 				result = result && results[i];
 			}
@@ -168,14 +171,14 @@
 		//Orgunits
 		invite.organisationUnits = definition.orgunits;
 
-		d2.get("/api/users.json?filter=email:eq:" + userInfo.email, definition.server).then(function(data) {
+		d2.get("/api/users.json?filter=email:eq:" + userInfo.email, definition.server).then(function (data) {
 			if (data.users.length > 0) {
-				deferred.resolve({"success": false, "message": "Account already requested. If you have not received an invitation, contact the course organiser."});
+				deferred.resolve({ "success": false, "message": "Account already requested. If you have not received an invitation, contact the course organiser." });
 				console.log("Duplicate");
 			}
 			else {
-				d2.post('/api/users/invite', invite, definition.server).then(function(data) {
-					deferred.resolve({"success": true, "message": "Account invitation sent to " + userInfo.email});
+				d2.post('/api/users/invite', invite, definition.server).then(function (data) {
+					deferred.resolve({ "success": true, "message": "Account invitation sent to " + userInfo.email });
 				});
 			}
 
@@ -184,18 +187,15 @@
 
 	}
 
-
-	//Make account (invite) for data use, i.e. account with a private "subtree" in the hierarchy, an empty data set and a user role
-	function makeCustomsationAccount(userInfo, definition) {
+	//Make account (invite) for data use, i.e. account with a private "subtree" in the hierarchy
+	function makeEventFundamentalsAccount(userInfo, definition) {
 		var deferred = Q.defer();
-		
-		
 
 		//Check for duplicate
-		d2.get("/api/users.json?filter=email:eq:" + userInfo.email, definition.server).then(function(data) {
+		d2.get("/api/users.json?filter=email:eq:" + userInfo.email, definition.server).then(function (data) {
 
 			if (data.users.length > 0) {
-				deferred.resolve({"success": false, "message": "Account already requested. If you have not received an invitation, contact the course organiser."});
+				deferred.resolve({ "success": false, "message": "Account already requested. If you have not received an invitation, contact the course organiser." });
 			}
 			else {
 				//Make orgunit
@@ -208,7 +208,61 @@
 						"id": definition.orgunitParent
 					}
 				};
-				d2.post('/api/organisationUnits', newRoot, definition.server).then(function(data) {
+				d2.post('/api/organisationUnits', newRoot, definition.server).then(function (data) {
+					console.log("Orgunit:" + data.response.uid);
+					var orgunitId = data.response.uid;
+
+					//Make user
+					var invite = {
+						"email": userInfo.email,
+						"userCredentials": {
+							"username": userInfo.email,
+							"userRoles": JSON.parse(JSON.stringify(definition.roles))
+						},
+						"userGroups": JSON.parse(JSON.stringify(definition.groups)),
+						"organisationUnits": [{ "id": orgunitId }]
+					};
+					d2.post('/api/users/invite', invite, definition.server).then(function (data) {
+						console.log("DONE");
+						deferred.resolve({ "success": true, "message": "Account invitation sent to " + userInfo.email });
+					}, function (error) {
+						deferred.resolve({ "success": false, "message": "Error configuring account. Contact course organiser." });
+					});
+
+				},
+					function (error) {
+						deferred.resolve({ "success": false, "message": "Error configuring account. Contact course organiser." });
+					});
+			}
+		});
+
+		return deferred.promise;
+	}
+
+	//Make account (invite) for data use, i.e. account with a private "subtree" in the hierarchy, an empty data set and a user role
+	function makeAggregateFundamentalsAccount(userInfo, definition) {
+		var deferred = Q.defer();
+
+
+
+		//Check for duplicate
+		d2.get("/api/users.json?filter=email:eq:" + userInfo.email, definition.server).then(function (data) {
+
+			if (data.users.length > 0) {
+				deferred.resolve({ "success": false, "message": "Account already requested. If you have not received an invitation, contact the course organiser." });
+			}
+			else {
+				//Make orgunit
+				var today = new Date();
+				var newRoot = {
+					"name": "ROOT - " + userInfo.email,
+					"shortName": "ROOT-" + userInfo.email,
+					"openingDate": today.toISOString(),
+					"parent": {
+						"id": definition.orgunitParent
+					}
+				};
+				d2.post('/api/organisationUnits', newRoot, definition.server).then(function (data) {
 					console.log("Orgunit:" + data.response.uid);
 					var orgunitId = data.response.uid;
 
@@ -216,18 +270,18 @@
 					var newDataSet = {
 						"name": "Data set - " + userInfo.email,
 						"periodType": "Monthly",
-						"categoryCombo": {"id": "bjDvmb4bfuf"},
+						"categoryCombo": { "id": "bjDvmb4bfuf" },
 						"mobile": true,
 						"publicAccess": "--------"
 					};
-					d2.post('/api/dataSets', newDataSet, definition.server).then(function(data) {
+					d2.post('/api/dataSets', newDataSet, definition.server).then(function (data) {
 						console.log("Dataset:" + data.response.uid);
 						var dataSetId = data.response.uid;
 
 						//Make user role
 						var newUserRole = {
 							"name": "User role - " + userInfo.email,
-							"dataSets": [{"id": dataSetId}],
+							"dataSets": [{ "id": dataSetId }],
 							"publicAccess": "--------"
 						}
 						d2.post('/api/userRoles', newUserRole, definition.server).then(function (data) {
@@ -242,12 +296,12 @@
 									"userRoles": JSON.parse(JSON.stringify(definition.roles))
 								},
 								"userGroups": JSON.parse(JSON.stringify(definition.groups)),
-								"organisationUnits": [{"id": orgunitId}]
+								"organisationUnits": [{ "id": orgunitId }]
 							};
-							invite.userCredentials.userRoles.push({"id": userRoleId});
+							invite.userCredentials.userRoles.push({ "id": userRoleId });
 							d2.post('/api/users/invite', invite, definition.server).then(function (data) {
 								console.log("User:" + data.uid);
-								var owner = {"id": data.uid};
+								var owner = { "id": data.uid };
 
 								//Now we must set owner of userRole to the new user
 								d2.get('/api/userRoles/' + userRoleId + '.json?fields=:owner', definition.server).then(function (data) {
@@ -261,33 +315,31 @@
 											data.user = owner;
 											d2.put('/api/dataSets/' + dataSetId, data, definition.server).then(function (data) {
 												console.log("DONE");
-												deferred.resolve({"success": true, "message": "Account invitation sent to " + userInfo.email});
-											}, function(error) {
-												deferred.resolve({"success": false, "message": "Error configuring account. Contact course organiser."});
-										}, function(error) {
-											deferred.resolve({"success": false, "message": "Error configuring account. Contact course organiser."});
+												deferred.resolve({ "success": true, "message": "Account invitation sent to " + userInfo.email });
+											}, function (error) {
+												deferred.resolve({ "success": false, "message": "Error configuring account. Contact course organiser." });
 											});
-									}, function(error) {
-										deferred.resolve({"success": false, "message": "Error configuring account. Contact course organiser."});
+										}, function (error) {
+											deferred.resolve({ "success": false, "message": "Error configuring account. Contact course organiser." });
 										});
-								}, function(error) {
-									deferred.resolve({"success": false, "message": "Error configuring account. Contact course organiser."});
+									}, function (error) {
+										deferred.resolve({ "success": false, "message": "Error configuring account. Contact course organiser." });
 									});
-							}, function(error) {
-								deferred.resolve({"success": false, "message": "Error configuring account. Contact course organiser."});
+								}, function (error) {
+									deferred.resolve({ "success": false, "message": "Error configuring account. Contact course organiser." });
 								});
-						}, function(error) {
-							deferred.resolve({"success": false, "message": "Error configuring account. Contact course organiser."});
+							}, function (error) {
+								deferred.resolve({ "success": false, "message": "Error configuring account. Contact course organiser." });
 							});
-					}, function(error) {
-						deferred.resolve({"success": false, "message": "Error configuring account. Contact course organiser."});
+						}, function (error) {
+							deferred.resolve({ "success": false, "message": "Error configuring account. Contact course organiser." });
 						});
-				}, function(error) {
-					deferred.resolve({"success": false, "message": "Error configuring account. Contact course organiser."});
+					}, function (error) {
+						deferred.resolve({ "success": false, "message": "Error configuring account. Contact course organiser." });
 					});
 				});
 			}
-		});  
+		});
 
 		return deferred.promise;
 	}
@@ -305,13 +357,13 @@
 			switch (assignment) {
 				case 1:
 					promises.push(resultCustomisation(userInfo.email));
-					//More as needed...
+				//More as needed...
 			}
 		}
 
 		//Check result of account creation, return true if all were successful
 		var result = true;
-		Q.all(promises).then(function(results) {
+		Q.all(promises).then(function (results) {
 			for (var i = 0; i < results.length; i++) {
 				result = result && results[i];
 			}
@@ -331,10 +383,10 @@
 		var definition = conf.inviteConfig['customisation'];
 
 		//Check for duplicate
-		d2.get("/api/users.json?filter=email:eq:" + email + '&fields=created,organisationUnits[level,children,id]&paging=false', definition.server).then(function(data) {
+		d2.get("/api/users.json?filter=email:eq:" + email + '&fields=created,organisationUnits[level,children,id]&paging=false', definition.server).then(function (data) {
 
 			if (data.users.length === 0) {
-				deferred.resolve({"success": false, "message": "Account with email " + email + " not found."});
+				deferred.resolve({ "success": false, "message": "Account with email " + email + " not found." });
 				return;
 			}
 
@@ -347,17 +399,17 @@
 
 			var currentOrgunit = currentUser.organisationUnits[0];
 			for (var i = 1; i < currentUser.organisationUnits.length; i++) {
-				if (currentOrgunit.level > currentUser.organisationUnits[i].level) currentOrgunit  = currentUser.organisationUnits[i];
+				if (currentOrgunit.level > currentUser.organisationUnits[i].level) currentOrgunit = currentUser.organisationUnits[i];
 			}
 
 			//User have not created a new orgunit (child)
 			if (currentOrgunit.children.length === 0) {
-				deferred.resolve({"success": false, "message": "No orgunits have been created."});
+				deferred.resolve({ "success": false, "message": "No orgunits have been created." });
 				return;
 			}
 
 			//Get all orgunits and children below the "root" orgunit
-			d2.get("/api/organisationUnits.json?filter=path:like:" + currentOrgunit.id + "/&fields=[name,id,dataSets]&paging=false", definition.server).then(function(data) {
+			d2.get("/api/organisationUnits.json?filter=path:like:" + currentOrgunit.id + "/&fields=[name,id,dataSets]&paging=false", definition.server).then(function (data) {
 
 				var dataSetExists = {};
 
@@ -375,7 +427,7 @@
 				}
 
 				if (dataSetIds.length < 1) {
-					deferred.resolve({"success": false, "message": "No data set assigned to orgunit children."});
+					deferred.resolve({ "success": false, "message": "No data set assigned to orgunit children." });
 					return;
 				}
 
@@ -383,12 +435,12 @@
 				url += '&dataSet=' + dataSetIds.join('&dataSet=');
 				url += '&orgUnit=' + orgunitIds.join('&orgUnit=');
 
-				d2.get(url,	definition.server).then(function(data) {
+				d2.get(url, definition.server).then(function (data) {
 					if (data && data.dataValues && data.dataValues.length > 0) {
-						deferred.resolve({"success": true, "message": "Result OK"});
+						deferred.resolve({ "success": true, "message": "Result OK" });
 					}
 					else {
-						deferred.resolve({"success": false, "message": "No data values."});
+						deferred.resolve({ "success": false, "message": "No data values." });
 					}
 				});
 			});
