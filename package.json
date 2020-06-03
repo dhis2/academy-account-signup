@@ -3,10 +3,10 @@
   "version": "0.0.1",
   "private": true,
   "dependencies": {
-    "q": "^1.4.1",
-    "request": "^2.79.0",
     "body-parser": "~1.18.3",
     "express": "~4.16.4",
-    "moment": "^2.14.1"
+    "moment": "^2.26.0",
+    "q": "^1.4.1",
+    "request": "^2.88.2"
   }
 }
