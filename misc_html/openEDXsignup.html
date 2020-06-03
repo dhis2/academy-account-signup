@@ -10,10 +10,10 @@
 			dataType: "json",
 			success: function(data) {
 				var email = data[0].email;
-				var obj = {"email": email, "type": "default"}; //OR "customisation"
+				var obj = {"email": email, "url": "https://customisation.example.com/dhis"};
 				console.log(obj)
 				$.ajax({
-					url         : "https://academy-dev.dhis2.org/signup/api",
+					url         : "https://example.com/signup/api",
 					type        : "POST",
 					data		: JSON.stringify(obj),
 					contentType	: "application/json; charset=utf-8",

@@ -61,10 +61,14 @@
 
 	//"API" for signing up
 	app.post('/signup/api', function(req, res) {
-		var valid = req.body.hasOwnProperty('email');
+		var valid = req.body.hasOwnProperty('email') && req.body.hasOwnProperty('url');
 		if (!req.body.hasOwnProperty('email')) {
 			res.statusCode = 400;
 			return res.send('Bad request ("email" property required)');
+		}
+		if (!req.body.hasOwnProperty('url')) {
+			res.statusCode = 400;
+			return res.send('Bad request ("url" property required)');
 		}
 
 		console.log(req.body.email);
@@ -82,7 +86,7 @@
 	});
 
 
-	//"API" for signing up
+	//"API" for checking results
 	app.post('/check/api', function(req, res) {
 		var valid = req.body.hasOwnProperty('email');
 		if (!req.body.hasOwnProperty('email')) {
@@ -110,17 +114,22 @@
 		var deferred = Q.defer();
 		var promises = [];
 
-		//Default - user invite with roles and groups
-		if (conf.inviteConfig.hasOwnProperty('default') && userInfo.type && userInfo.type === 'default') {
-			promises.push(makeDefaultAccount(userInfo, conf.inviteConfig['default']));
-		}
+		//Get the configuration from the request 
+		if (userInfo.hasOwnProperty('url') && userInfo.url) {
+			var url = userInfo.url;
 
-		//Customisation - user invite with new dataset, user role and orgunit branch
-		if (conf.inviteConfig.hasOwnProperty('customisation') && userInfo.type && userInfo.type === 'customisation') {
-			promises.push(makeCustomsationAccount(userInfo, conf.inviteConfig['customisation']));
-		}
+			//Get configuration for the requested url
+			var c = getConf(url);
 
-		//More as needed...
+			//Check if the conf is "regular" or "customisation" type
+			if (c.type == "default") {
+				promises.push(makeDefaultAccount(userInfo, c));
+			}
+			else if (c.type == "customisation") {
+				promises.push(makeCustomsationAccount(userInfo, c));
+			}
+			
+		}
 
 
 		//Check result of account creation, return true if all were successful
@@ -149,7 +158,7 @@
 
 		//Roles
 		invite.userCredentials = {
-			"username": null,
+			"username": userInfo.email,
 			"userRoles": definition.roles
 		}
 
@@ -394,5 +403,14 @@
 		console.log('Listening on port 8099!');
 	});
 
+
+	//Get configuration based on url
+	function getConf(url) {
+		for (var i = 0; i < conf.inviteConfigs.length; i++) {
+			if (conf.inviteConfigs[i].server.url == url) return conf.inviteConfigs[i];
+		}
+
+		return false;
+	}
 
 }());

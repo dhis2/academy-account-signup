@@ -12,7 +12,7 @@
 		});
 
 		$.ajax({
-			url         : 'https://academy-dev.dhis2.org/signup/api',
+			url         : 'http://localhost:8099/signup/api',
 			type        : 'POST',
 			data		: JSON.stringify(formData),
 			contentType	: "application/json; charset=utf-8",
@@ -33,11 +33,9 @@
 <form onsubmit="submitForm(); return false;">
 	<label for="email">Email:</label>
 	<input type="email" id="email" name="email" placeholder="Enter your email address" />
+	<label for="email">URL:</label>
+	<input type="url" id="url" name="url" placeholder="Enter server url" />
 	<input type="button" onClick="submitForm();" value="Request account" />
 </form>
-<p>After requesting an account you will receive invitation by email to register in two different databases: </p>
-<ul>
-	<li>Trainingland - for information use and tracker exercises</li>
-	<li>Customisationland - for database design exercises</li>
-</ul>
+<p>After requesting an account you will receive invitation by email to register</p>
 </html>
