@@ -38,6 +38,11 @@
 			else {
 				console.log("Error in POST");
 				console.log(data);
+				if (data && data.response && data.response.errorReports) {
+					for (var i = 0; i < data.response.errorReports.length; i++) {
+						console.log(data.response.errorReports[i]);
+					}
+				}
 				deferred.reject({'data': data, 'error': error, 'status': response.statusCode});
 			}
 		});
