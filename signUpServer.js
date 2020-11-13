@@ -292,7 +292,7 @@
 							var invite = {
 								"email": userInfo.email,
 								"userCredentials": {
-									"username": null,
+									"username": userInfo.email,
 									"userRoles": JSON.parse(JSON.stringify(definition.roles))
 								},
 								"userGroups": JSON.parse(JSON.stringify(definition.groups)),
