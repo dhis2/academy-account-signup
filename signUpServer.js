@@ -93,6 +93,10 @@
 			res.statusCode = 400;
 			return res.send('Bad request ("email" property required)');
 		}
+		if (!req.body.hasOwnProperty('url')) {
+			res.statusCode = 400;
+			return res.send('Bad request ("url" property required)');
+		}
 
 		console.log(new Date() + " Checking " + req.body.email);
 
@@ -351,12 +355,22 @@
 		//Makes promises for account creation
 		var deferred = Q.defer();
 		var promises = [];
+		var config;
+		
+		//Get the configuration from the request 
+		if (userInfo.hasOwnProperty('url') && userInfo.url) {
+			var url = userInfo.url;
 
+			//Get configuration for the requested url
+			config = getConf(url, 'result');
+
+		}
+	
 		var assignment = userInfo.assignment ? userInfo.assignment : false;
 		if (assignment) {
 			switch (assignment) {
 				case 1:
-					promises.push(resultCustomisation(userInfo.email));
+					promises.push(resultCustomisation(userInfo.email, config));
 				//More as needed...
 			}
 		}
@@ -377,10 +391,8 @@
 	}
 
 	//Check result of customisation exercise
-	function resultCustomisation(email) {
+	function resultCustomisation(email, definition) {
 		var deferred = Q.defer();
-
-		var definition = conf.inviteConfig['customisation'];
 
 		//Check for duplicate
 		d2.get("/api/users.json?filter=email:eq:" + email + '&fields=created,organisationUnits[level,children,id]&paging=false', definition.server).then(function (data) {
@@ -460,6 +472,15 @@
 	function getConf(url) {
 		for (var i = 0; i < conf.inviteConfigs.length; i++) {
 			if (conf.inviteConfigs[i].server.url == url) return conf.inviteConfigs[i];
+		}
+
+		return false;
+	}
+	
+	//Get configuration based on url and type
+	function getConf(url, type) {
+		for (var i = 0; i < conf.inviteConfigs.length; i++) {
+			if (conf.inviteConfigs[i].server.url == url && conf.inviteConfigs[i].type == type) return conf.inviteConfigs[i];
 		}
 
 		return false;

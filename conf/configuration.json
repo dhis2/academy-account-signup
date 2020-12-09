@@ -32,6 +32,14 @@
       "roles": [{"id": "Bj9rEkN3kcF"}],
       "groups": [{"id": "WNocxRTYWp2"}],
       "orgunitParent": "GD7TowwI46c"
+    },
+    {
+      "type": "result",
+      "server": {
+        "url": "https://customisation.example.com/dhis",
+        "user": "admin",
+        "password": "district"
+      }
     }
   ]
 }
