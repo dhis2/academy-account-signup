@@ -362,7 +362,7 @@
 			var url = userInfo.url;
 
 			//Get configuration for the requested url
-			config = getConf(url, 'result');
+			config = getConfType(url, 'result');
 
 		}
 	
@@ -478,7 +478,7 @@
 	}
 	
 	//Get configuration based on url and type
-	function getConf(url, type) {
+	function getConfType(url, type) {
 		for (var i = 0; i < conf.inviteConfigs.length; i++) {
 			if (conf.inviteConfigs[i].server.url == url && conf.inviteConfigs[i].type == type) return conf.inviteConfigs[i];
 		}
