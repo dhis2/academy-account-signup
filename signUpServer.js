@@ -443,7 +443,7 @@
 					return;
 				}
 
-				var url = '/api/dataValueSets.json?startDate=2000-01-01&endDate=2020-01-01';
+				var url = '/api/dataValueSets.json?startDate=2000-01-01&endDate=2025-01-01';
 				url += '&dataSet=' + dataSetIds.join('&dataSet=');
 				url += '&orgUnit=' + orgunitIds.join('&orgUnit=');
 
