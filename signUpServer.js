@@ -191,7 +191,7 @@
 
 	}
 
-	//Make account (invite) for data use, i.e. account with a private "subtree" in the hierarchy
+	//Make account (invite) for customisation, i.e. account with a private "subtree" in the hierarchy
 	function makeEventFundamentalsAccount(userInfo, definition) {
 		var deferred = Q.defer();
 
