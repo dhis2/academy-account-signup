@@ -7,25 +7,26 @@
         "user": "admin",
         "password": "district"
       },
-      "roles": [{"id": "UraRr44e9bc"}],
-      "groups": [{"id": "qPYfqTI89Bd"}],
-      "orgunits": [{"id": "GD7TowwI46c"}]
+      "roles": [{"id": "Euq3XfEIEbx"}],
+      "groups": [{"id": "QYrzIjSfI8z"}],
+      "orgunits": [{"id": "ImspTQPwCqd"}],
+      "privateGroup": true
     },
     {
-      "type": "default",
+      "type": "customisationAggregate",
       "server": {
-        "url": "https://example.com/exercise",
+        "url": "https://customisation.example.com/dhis",
         "user": "admin",
         "password": "district"
       },
-      "roles": [{"id": "UraRr44e9bc"}],
-      "groups": [{"id": "btYfqTI89Bd"}],
-      "orgunits": [{"id": "GD7TowwI46c"}]
+      "roles": [{"id": "Bj9rEkN3kcF"}],
+      "groups": [{"id": "WNocxRTYWp2"}],
+      "orgunitParent": "GD7TowwI46c"
     },
     {
-      "type": "customisation",
+      "type": "customisationEvent",
       "server": {
-        "url": "https://customisation.example.com/dhis",
+        "url": "https://customisation.example.com/event",
         "user": "admin",
         "password": "district"
       },

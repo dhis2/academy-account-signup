@@ -60,7 +60,7 @@
 
 
 	//"API" for signing up
-	app.post('/signup/api', function (req, res) {
+	app.post('/signup', function (req, res) {
 		var valid = req.body.hasOwnProperty('email') && req.body.hasOwnProperty('url');
 		if (!req.body.hasOwnProperty('email')) {
 			res.statusCode = 400;
@@ -82,7 +82,8 @@
 				res.statusCode = 400;
 				return res.send(success.message);
 			}
-		});
+		})
+
 	});
 
 
@@ -133,35 +134,74 @@
 	//Make account (invite) for data use, i.e. just an account with role and groups
 	function makeDefaultAccount(userInfo, definition) {
 		var deferred = Q.defer();
-		var invite = {};
-
-		//Email
-		invite.email = userInfo.email;
-
-		//Roles
-		invite.userCredentials = {
-			"username": userInfo.email,
-			"userRoles": definition.roles
-		}
-
-		//Groups
-		invite.userGroups = definition.groups;
-
-		//Orgunits
-		invite.organisationUnits = definition.orgunits;
 
 		d2.get("/api/users.json?filter=email:eq:" + userInfo.email, definition.server).then(function (data) {
+
 			if (data.users.length > 0) {
 				deferred.resolve({ "success": false, "message": "Account already requested. If you have not received an invitation, contact the course organiser." });
-				console.log("Duplicate");
 			}
 			else {
-				d2.post('/api/users/invite', invite, definition.server).then(function (data) {
-					deferred.resolve({ "success": true, "message": "Account invitation sent to " + userInfo.email });
-				});
-			}
+				var invite = {};
 
-		});
+				//Email
+				invite.email = userInfo.email;
+
+				//Roles
+				invite.userCredentials = {
+					"username": userInfo.email,
+					"userRoles": definition.roles
+				}
+
+				//Groups
+				invite.userGroups = definition.groups;
+
+				//Orgunits
+				invite.organisationUnits = definition.orgunits;
+
+
+				d2.post('/api/users/invite', invite, definition.server).then(function (data) {
+
+					//if private group, add to private group with 
+					//new user as member, and set sharing to be visible by new user only
+					if (definition.privateGroup) {
+						var newUserGroup = {
+							"name": "User group - " + userInfo.email,
+							"users": [{ "id": data.uid }],
+							"sharing": {
+								"owner": data.uid,
+								"external": false,
+								"users": {
+									[data.uid]: {
+										"access": "rw------",
+										"id": data.uid
+									}
+								},
+								"userGroups": {},
+								"public": "--------"
+							},
+							"owner": data.uid
+						}
+						d2.post('/api/userGroups', newUserGroup, definition.server).then(function (data) {
+							console.log("Private usergroup:" + data.uid);
+							deferred.resolve({ "success": true, "message": "Account invitation sent to " + userInfo.email });
+						},
+							function (error) {
+								deferred.resolve({ "success": false, "message": "Error assigning account to private user group. Contact course organiser." });
+							});
+					}
+					else {
+						deferred.resolve({ "success": true, "message": "Account invitation sent to " + userInfo.email });
+					}
+				},
+					function (error) {
+						deferred.resolve({ "success": false, "message": "Error creating account. Contact course organiser." });
+					});
+
+			}
+		},
+			function (error) {
+				deferred.resolve({ "success": false, "message": "Error checking for existing accounts. Contact course organiser." });
+			});
 		return deferred.promise;
 
 	}
@@ -218,7 +258,8 @@
 		return deferred.promise;
 	}
 
-	//Make account (invite) for data use, i.e. account with a private "subtree" in the hierarchy, an empty data set and a user role
+	//Make account (invite) for data use, i.e. account with a private "subtree" in the hierarchy, 
+	//an empty data set and a user role
 	function makeAggregateFundamentalsAccount(userInfo, definition) {
 		var deferred = Q.defer();
 
