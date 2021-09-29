@@ -179,6 +179,7 @@
 								"userGroups": {},
 								"public": "--------"
 							},
+							"publicAccess": "--------",
 							"owner": data.uid
 						}
 						d2.post('/api/userGroups', newUserGroup, definition.server).then(function (data) {
