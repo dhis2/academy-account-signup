@@ -180,10 +180,17 @@
 								"public": "--------"
 							},
 							"publicAccess": "--------",
+							"userAccesses": [
+								{
+								  "access": "r-------",
+								  "id": data.uid,
+								  "userUid": data.uid
+								}
+							],
 							"owner": data.uid
 						}
 						d2.post('/api/userGroups', newUserGroup, definition.server).then(function (data) {
-							console.log("Private usergroup:" + data.uid);
+							
 							deferred.resolve({ "success": true, "message": "Account invitation sent to " + userInfo.email });
 						},
 							function (error) {
