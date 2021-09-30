@@ -17,11 +17,6 @@
 	}
 	app.use(logger);
 
-
-	//Use express to serve static files, i.e. the frontend registration form
-	//app.use(express.static('public'));
-
-
 	//Use body-parser for parsing json
 	app.use(bodyParser.json());
 
