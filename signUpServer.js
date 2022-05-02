@@ -223,8 +223,8 @@
 				//Make orgunit
 				var today = new Date();
 				var newRoot = {
-					"name": "ROOT - " + userInfo.email,
-					"shortName": "ROOT-" + userInfo.email,
+					"name": "Trainingland - " + userInfo.email,
+					"shortName": "Trainingland-" + userInfo.email,
 					"openingDate": today.toISOString(),
 					"parent": {
 						"id": definition.orgunitParent
@@ -276,8 +276,8 @@
 				//Make orgunit
 				var today = new Date();
 				var newRoot = {
-					"name": "ROOT - " + userInfo.email,
-					"shortName": "ROOT-" + userInfo.email,
+					"name": "Trainingland - " + userInfo.email,
+					"shortName": "Trainingland-" + userInfo.email,
 					"openingDate": today.toISOString(),
 					"parent": {
 						"id": definition.orgunitParent
