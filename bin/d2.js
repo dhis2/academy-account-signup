@@ -152,7 +152,6 @@
 			}
 			else {
 				console.log("Error in GET");
-				console.log(error.message);
 				getCurrent.deferred.reject({'data': data, 'error': error, 'status': response});
 				getCurrent = null;
 				getNow();

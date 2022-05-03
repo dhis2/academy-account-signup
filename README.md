@@ -16,15 +16,15 @@ Run script/backend:
 $ node signUpServer.js
 ```
 
-Service is now available on http://localhost:8089/index.html
+Service is now available on http://localhost:8099/index.html
 
 ## Usage
-The tool has two components :
+The tool provides an API (localhost:8099/signup) which takes an email address and url, and based on this creates DHIS2 account invites.
 
-* An API (localhost:8089/signup) - which takes an email address and creates DHIS 2 account invites
-* A static `index.html` with a basic form that takes and email address and calls the API.
+The `misc_html` folder provides an example snippet of how the API can be used from e.g. OpenEDX.
 
-The API can be used without the static index.html page.
+The API can be tested using for example curl, like this:
+`curl -X POST -H "Content-Type: application/json" "http://localhost:8099/signup" -d "{\"email\": \"user@example.com\", \"url\": \"https://example.com/demo\"}"`
 
 ### Configuration
 Details for the DHIS 2 instance and the user accounts that will be set up in DHIS 2 are specified in `conf/configuration.json`. There is one *default* configuration that can be used to create account invites with specific:
@@ -33,7 +33,9 @@ Details for the DHIS 2 instance and the user accounts that will be set up in DHI
 * user roles
 * user groups
 
-There is also one *customisation* configuration which is specific to creating of "Customisation academy" participants accounts, along with a function in `signUpServer.js` for doing the necessary configuration in DHIS. More configurations could be added as needed.
+There are also two custom configuration types available (created for customisation academies/trainings), which will add users into a new "branch" of the organisation unit hierarchy to simulate that they configure DHIS2 "from scratch" in a dedicated instance.
+
+Any number of instances/configs can be added to the configuration file as long as the server url is unique.
 
 ## To-do
 * Returning the result of the account creating (success/failure)
