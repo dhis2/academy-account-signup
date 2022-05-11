@@ -2,7 +2,6 @@
 (function(){
 	'use strict';
 
-	var conf = require('../conf/configuration.json');
 	var Q = require('q');
 	var request = require('request');
 
@@ -113,6 +112,8 @@
 	var getCurrent = null;
 	function get(url, serverInfo) {
 		var deferred = Q.defer();
+
+		if (debug) console.log("get wrapper: " + url);
 
 		if (!getQ) getQ = [];
 
