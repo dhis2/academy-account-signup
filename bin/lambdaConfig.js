@@ -16,7 +16,12 @@ class lambdaConfig {
             if ('SecretString' in secretValue) {
                 var conf = JSON.parse(secretValue.SecretString);
                 for (var i = 0; i < conf.inviteConfigs.length; i++) {
-                    if (conf.inviteConfigs[i].server.url == url) return conf.inviteConfigs[i];
+                    var server = conf.inviteConfigs[i].server;
+                    if (server.url == url) return conf.inviteConfigs[i];
+                    if (server.alias) {
+                        if (server.alias == url) return conf.inviteConfigs[i];
+                        if (Array.isArray(server.alias) && server.alias.indexOf(url) !== -1) return conf.inviteConfigs[i];
+                    }
                 }
             }
             else {
